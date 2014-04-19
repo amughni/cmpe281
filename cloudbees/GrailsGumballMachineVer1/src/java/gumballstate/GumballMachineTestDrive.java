@@ -1,6 +1,8 @@
 package gumballstate;
 
-public class GumballMachineTestDrive {
+import java.io.Serializable;
+
+public class GumballMachineTestDrive implements Serializable {
 
 	public static void main(String[] args) {
 		GumballMachine gumballMachine = new GumballMachine(5);

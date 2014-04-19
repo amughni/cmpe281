@@ -1,7 +1,13 @@
 package gumballstate;
 
-public class GumballMachine {
+import java.io.Serializable;
+
+public class GumballMachine implements Serializable {
  
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	State soldOutState;
 	State noQuarterState;
 	State hasQuarterState;

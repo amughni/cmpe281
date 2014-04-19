@@ -1,6 +1,8 @@
 package grailsgumballmachinever1
 
-class GumballController {
+import java.io.Serializable;
+
+class GumballController implements Serializable {
 
     def scaffold = Gumball
 

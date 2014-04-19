@@ -3,7 +3,7 @@ package grailsgumballmachinever1
 import gumballstate.GumballMachine
 
 
-class GumballMachineController {
+class GumballMachineController implements Serializable{
 
     def String machineSerialNum = "1234998871109"
     def GumballMachine gumballMachine
@@ -27,7 +27,12 @@ class GumballMachineController {
             else
             {
                 // create a default machine
-                gumballMachine = new GumballMachine(5);
+				gumballMachine = new GumballMachine(5);
+				//set default serial number & model number
+				gumball.modelNumber = "v2";
+				gumball.serialNumber = "1234998871109";
+				gumballMachine.setModelNumber(gumball.modelNumber)
+				gumballMachine.setSerialNumber(gumball.serialNumber)
                 System.out.println(gumballMachine)
             }
 
@@ -72,9 +77,10 @@ class GumballMachineController {
 					def gumball = Gumball.findBySerialNumber( machineSerialNum )
 					if ( gumball )
 					{
+						gumball.lock; //pessimistic lock
 						// update gumball inventory
 						gumball.countGumballs = after ;
-						gumball.save();
+						gumball.save(flush:true); // default optimistic lock
 					}
 				}
 				
