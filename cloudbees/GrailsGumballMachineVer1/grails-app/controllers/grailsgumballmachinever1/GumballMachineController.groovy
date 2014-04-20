@@ -91,9 +91,15 @@ class GumballMachineController implements Serializable{
 					gumballMachine = new GumballMachine(gumball.countGumballs)
 					gumballMachine.setModelNumber(gumball.modelNumber)
 					gumballMachine.setSerialNumber(gumball.serialNumber)
-					System.out.println(gumballMachine.toString())
-					
-					gumballMachine.setState(state);
+			
+					if(state.contains("waiting for quarter"))
+					{
+						gumballMachine.setState(gumballMachine.getHasQuarterState());
+					}
+					else
+					{
+						gumballMachine.setState(gumballMachine.getSoldState());
+					}
 				
 					System.out.println(gumballMachine.toString())
 					
