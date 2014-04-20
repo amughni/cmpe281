@@ -1,7 +1,10 @@
 package grailsgumballmachinever1
 
+import groovyx.net.http.HTTPBuilder
 import gumballstate.GumballMachine
-
+import groovyx.net.http.Method
+import groovyx.net.http.*
+import static groovyx.net.http.ContentType.XML
 
 class GumballMachineController implements Serializable{
 
@@ -11,93 +14,140 @@ class GumballMachineController implements Serializable{
     def index() {
 		
 		String VCAP_SERVICES = System.getenv('VCAP_SERVICES')
-		
-        if (request.method == "GET") {
-
-            // search db for gumball machine
-            def gumball = Gumball.findBySerialNumber( machineSerialNum )
-            if ( gumball )
-            {
-                // load machine
-                gumballMachine = new GumballMachine(gumball.countGumballs)
-                gumballMachine.setModelNumber(gumball.modelNumber)
-                gumballMachine.setSerialNumber(gumball.serialNumber)
-                System.out.println(gumballMachine)
-            }
-            else
-            {
-                // create a default machine
-				gumballMachine = new GumballMachine(5);
-				//set default serial number & model number
-				Random randomModel = new Random( machineSerialNum );
-				gumball.modelNumber = randomModel;
-				gumball.serialNumber = machineSerialNum;
-				gumballMachine.setModelNumber(gumball.modelNumber)
-				gumballMachine.setSerialNumber(gumball.serialNumber)
-                System.out.println(gumballMachine)
-            }
-
-            // save in the session
-            session.machine = gumballMachine
+		if(request.method == "GET") {
 			
-            // report a message to user
-            flash.message = gumballMachine.toString() 
-
-            // display view
-            render(view: "index")
-
-        }
-        else if (request.method == "POST") {
-
-            // dump out request object
-            request.each { key, value ->
-                println( "request: $key = $value")
-            }
-
-            // dump out params
-            params?.each { key, value ->
-                println( "params: $key = $value" )
-            }
-
-            // get machine from session
-            gumballMachine = session.machine
-            System.out.println( gumballMachine.toString() )
-			
-            if ( params?.event == "Insert Quarter" )
-            {
-                gumballMachine.insertQuarter()
-            }
-            if ( params?.event == "Turn Crank" )
-            {	
-				def before = gumballMachine.getCount() ;
-                gumballMachine.turnCrank();
-				def after = gumballMachine.getCount() ;
+				//search for gumball machine
+	
+				def modelNum = null;
+				def http = new HTTPBuilder("http://localhost:8080/GrailsGumballMachineVer1/api/" + machineSerialNum);
 				
-				if ( after != before )
-				{
-					def gumball = Gumball.findBySerialNumber( machineSerialNum )
-					if ( gumball )
+				http.request(Method.GET, XML) {
+					
+					headers.'Cache-Control' = 'no-store'
+					
+					response.success =
 					{
-						gumball.lock; //pessimistic lock
-						// update gumball inventory
-						gumball.countGumballs = after ;
-						gumball.save(flush:true); // default optimistic lock
+						resp, xml ->
+						println "status: " + resp.status
+						println "code: " + xml.code
+						println "message: " + xml.message
+						println "count: " + xml.countGumballs
+						println "model: " + xml.modelNumber
+						println "serial#: " + machineSerialNum
+						modelNum = xml.modelNumber
 					}
 				}
 				
-            }
-
+				if(modelNum){
+					//create the machine
+					
+					def gumball = Gumball.findBySerialNumber( machineSerialNum )
+					if ( gumball )
+					{
+						// load machine
+						gumballMachine = new GumballMachine(gumball.countGumballs)
+						gumballMachine.setModelNumber(gumball.modelNumber)
+						gumballMachine.setSerialNumber(gumball.serialNumber)
+						System.out.println(gumballMachine.toString())
+					}
+					else{
+						flash.message = "Error! Gumball Machine Not Found!";
+						render(view: "index");
+					}
+				}
+				else{
+					flash.message = "Error! Gumball Machine Not Found!";
+					render(view: "index");
+				}
+				
+				//report a message to user
+				flash.message = gumballMachine.toString();
+				
+				//send machine state to client
+				flash.state = gumballMachine.getState();
+				flash.model = modelNum;
+				
+				//display view
+				render(view: "index");
+			}
+			else if (request.method == "POST") {
+				//dump out request object
+				request.each { key, value ->
+					println( "request: $key = $value" )
+				}
+				
+				// dump out params
+				params?.each { key, value ->
+					println( "params: $key = $value" )
+				}
+				
+				//restore machine to client state
+				def state = params?.state
+				def modelNum = params?.model
+				def gumball = Gumball.findBySerialNumber( machineSerialNum )
+				if ( gumball )
+				{
+					// load machine
+					gumballMachine = new GumballMachine(gumball.countGumballs)
+					gumballMachine.setModelNumber(gumball.modelNumber)
+					gumballMachine.setSerialNumber(gumball.serialNumber)
+					System.out.println(gumballMachine.toString())
+					
+					gumballMachine.setState(state);
+				
+					System.out.println(gumballMachine.toString())
+					
+					def respCode = ""
+					def respMessage = ""
+					if( params?.event == "Insert Quarter")
+					{
+						gumballMachine.insertQuarter();
+					}
+					if( params?.event == "Turn Crank" )
+					{
+						def before = gumballMachine.getCount() ;
+						gumballMachine.turnCrank();
+						def after = gumballMachine.getCount() ;
+						
+						if ( after != before )// Coin accepted state
+						{
+							def http = new HTTPBuilder("http://localhost:8080/GrailsGumballMachineVer1/api/" + machineSerialNum);
+							http.request(Method.PUT, XML)
+							{
+								body = "<root><count>10</count><message>Hello Update</message></root>";
+								
+								response.success =
+								{
+									resp, xml ->
+									println "status: " + resp.status
+									println "code: " + xml.code
+									println "message: " + xml.message
+									respCode = ( xml.code!=null ? xml.code : " ")
+									respMessage = ( xml.message!=null ? xml.message : " " )
+								}
+							}
+						}
+					}
+					
+				
+					//report a message to user
+					flash.message = gumballMachine.toString() + "\nCode: " + respCode + "\nMessage: " + respMessage
+					
+					// send machine state to client
+					flash.state = gumballMachine.getState();
+					flash.model = modelNum;
+					
+					//render view
+					render(view: "index")
+				}
+				else{
+					flash.message = "Error! Gumball Machine Not Found!";
+					render(view: "index");
+				}
+				 
+			}
 			
-            // report a message to user
-            flash.message = gumballMachine.toString() 
-
-            // render view
-            render(view: "index")
-        }
-        else {
-            render(view: "/error")
-        }
-    }
+     }
 
 }
 
