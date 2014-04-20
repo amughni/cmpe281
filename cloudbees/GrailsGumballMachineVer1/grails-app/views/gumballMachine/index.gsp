@@ -11,8 +11,8 @@
 <!-- FORM SECTION -->
 <form name="form1" method="post" action="">
     <p>
-
-<!--  <input hidden>-->
+	<input type="hidden" name="state" id="state" value="${flash.state}"/>
+	<input type="hidden" name="model" id="model" value="${flash.model}"/>
     <div align="center">
         <textarea name="message" cols="50" rows="10" readonly id="message">
             ${flash.message}

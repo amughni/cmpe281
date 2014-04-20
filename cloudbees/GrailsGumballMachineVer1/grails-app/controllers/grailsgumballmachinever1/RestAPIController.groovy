@@ -125,7 +125,7 @@ class RestAPIController {
 	    println( "params: $key = $value" ) 
 	  }
 	  
-	  //pasre request using xml slurper
+	  //parse request using xml parser
 	  println( request.XML.countGumballs )
 	  println( request.XML.modelNumber )
 	  println( request.XML.serialNumber )
@@ -133,7 +133,7 @@ class RestAPIController {
 	  def g = new Gumball()
 	  g.countGumballs = request.XML.xountGumballs.toInteger()
 	  g.modelNumber = request.XML.modelNumber
-	  g.serialNumber = reuest.XML.serialNumber
+	  g.serialNumber = request.XML.serialNumber
 	  
 	  try{
 	    g.save(flush: true)
