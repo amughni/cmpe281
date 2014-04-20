@@ -18,7 +18,7 @@ class GumballMachineController implements Serializable{
             def gumball = Gumball.findBySerialNumber( machineSerialNum )
             if ( gumball )
             {
-                // create a default machine
+                // load machine
                 gumballMachine = new GumballMachine(gumball.countGumballs)
                 gumballMachine.setModelNumber(gumball.modelNumber)
                 gumballMachine.setSerialNumber(gumball.serialNumber)
@@ -29,8 +29,9 @@ class GumballMachineController implements Serializable{
                 // create a default machine
 				gumballMachine = new GumballMachine(5);
 				//set default serial number & model number
-				gumball.modelNumber = "v2";
-				gumball.serialNumber = "1234998871109";
+				Random randomModel = new Random( machineSerialNum );
+				gumball.modelNumber = randomModel;
+				gumball.serialNumber = machineSerialNum;
 				gumballMachine.setModelNumber(gumball.modelNumber)
 				gumballMachine.setSerialNumber(gumball.serialNumber)
                 System.out.println(gumballMachine)
@@ -60,7 +61,7 @@ class GumballMachineController implements Serializable{
 
             // get machine from session
             gumballMachine = session.machine
-            System.out.println(gumballMachine)
+            System.out.println( gumballMachine.toString() )
 			
             if ( params?.event == "Insert Quarter" )
             {

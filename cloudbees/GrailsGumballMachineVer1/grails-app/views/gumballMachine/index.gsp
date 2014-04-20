@@ -12,6 +12,7 @@
 <form name="form1" method="post" action="">
     <p>
 
+<!--  <input hidden>-->
     <div align="center">
         <textarea name="message" cols="50" rows="10" readonly id="message">
             ${flash.message}
